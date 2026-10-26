@@ -29,6 +29,10 @@ Run the background worker (needed for queued emails, e.g. password reset) in a s
 uv run arq app.worker.WorkerSettings
 ```
 
+## Notifications
+
+In-app notifications with OneSignal push. Set `NOTIFICATION_ENABLED` and the `ONESIGNAL_*` keys in `.env`.
+
 ## Docker
 
 Runs the API, the arq worker, PostgreSQL, Redis and Mailpit (catches outgoing email):

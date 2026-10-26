@@ -24,6 +24,11 @@ class TokenRefresh(BaseModel):
     refresh_token: str
 
 
+class LogoutRequest(TokenRefresh):
+    # Sent by mobile clients so this device stops receiving push after logout.
+    onesignal_player_id: str | None = Field(default=None, max_length=255)
+
+
 class Token(BaseModel):
     access_token: str
     refresh_token: str

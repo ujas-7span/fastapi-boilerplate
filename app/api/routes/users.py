@@ -1,13 +1,17 @@
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import QB, get_current_user, get_db, get_qb
+from app.api.deps import QB, get_current_user, get_db, get_qb, mark_notification_read
 from app.core.config import get_settings
 from app.models.user import User
 from app.schemas.user import UserCreate, UserPage, UserRead, UserUpdate
 from app.services import user_service
 
-router = APIRouter(prefix="/users", tags=["Users"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/users",
+    tags=["Users"],
+    dependencies=[Depends(get_current_user), Depends(mark_notification_read)],
+)
 
 settings = get_settings()
 user_qb = get_qb(User)

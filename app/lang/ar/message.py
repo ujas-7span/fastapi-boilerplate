@@ -33,4 +33,9 @@ MESSAGES: dict[str, str] = {
     "email.password_reset.button": "إعادة تعيين كلمة المرور",
     "email.password_reset.fallback_intro": "إذا لم يعمل الزر، انسخ الرابط التالي والصقه في متصفحك:",
     "email.password_reset.ignore": "إذا لم تطلب ذلك، يمكنك تجاهل هذا البريد الإلكتروني بأمان.",
+    "notification.read_success": "تم تعليم الإشعارات كمقروءة.",
+    "notification.unread_success": "تم تعليم الإشعارات كغير مقروءة.",
+    "notification.welcome.title": "مرحبًا بك في {app_name}",
+    "notification.welcome.description": "مرحبًا {name}، تم إنشاء حسابك بنجاح.",
+    "device.onesignal_saved": "تم حفظ بيانات الجهاز بنجاح.",
 }

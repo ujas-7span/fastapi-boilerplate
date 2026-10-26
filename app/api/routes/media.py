@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, mark_notification_read
 from app.schemas.media import MediaUploadRequest, MediaUploadUrlResponse
 from app.services import media_service
 
-router = APIRouter(prefix="/media", tags=["Media"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/media",
+    tags=["Media"],
+    dependencies=[Depends(get_current_user), Depends(mark_notification_read)],
+)
 
 
 @router.post("/upload-url", response_model=MediaUploadUrlResponse)

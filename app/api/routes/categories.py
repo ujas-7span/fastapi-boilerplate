@@ -1,13 +1,17 @@
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import QB, get_current_user, get_db, get_qb
+from app.api.deps import QB, get_current_user, get_db, get_qb, mark_notification_read
 from app.core.config import get_settings
 from app.models.category import Category
 from app.schemas.category import CategoryCreate, CategoryPage, CategoryRead, CategoryUpdate
 from app.services import category_service
 
-router = APIRouter(prefix="/categories", tags=["Categories"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/categories",
+    tags=["Categories"],
+    dependencies=[Depends(get_current_user), Depends(mark_notification_read)],
+)
 
 settings = get_settings()
 category_qb = get_qb(Category)

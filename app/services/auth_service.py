@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime, timedelta
 from urllib.parse import quote
 
@@ -15,15 +16,18 @@ from app.core.security import (
     verify_opaque_token,
     verify_password,
 )
+from app.models.notification import NOTIFIABLE_TYPE_USER
 from app.models.password_reset_token import PasswordResetToken
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.schemas.auth import ForgotPasswordRequest, ResetPasswordRequest, Token, UserLogin, UserRegister
+from app.services import notification_service
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def register_user(db: Session, payload: UserRegister) -> User:
+async def register_user(db: Session, payload: UserRegister) -> User:
     # include_deleted=True is deliberate: the `email` column has a single, unscoped unique
     # constraint, so a soft-deleted user's email is still physically taken either way.
     stmt = select(User).where(User.email == payload.email).execution_options(include_deleted=True)
@@ -35,6 +39,24 @@ def register_user(db: Session, payload: UserRegister) -> User:
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # The account already exists at this point — a failed welcome notification (e.g. Redis down
+    # while queuing its push) must not turn a successful registration into an error response.
+    try:
+        await notification_service.notify(
+            db,
+            user_id=user.id,
+            type="welcome",
+            title_key="notification.welcome.title",
+            description_key="notification.welcome.description",
+            data={"name": user.name, "app_name": settings.app_name},
+            notifiable_type=NOTIFIABLE_TYPE_USER,
+            notifiable_id=user.id,
+        )
+    except Exception:
+        db.rollback()
+        logger.warning("Could not send the welcome notification to user %s.", user.id, exc_info=True)
+
     return user
 
 
@@ -61,10 +83,13 @@ def refresh_tokens(db: Session, raw_refresh_token: str) -> Token:
     return _issue_tokens(db, user)
 
 
-def revoke_refresh_token(db: Session, raw_refresh_token: str) -> None:
+def revoke_refresh_token(db: Session, raw_refresh_token: str) -> int:
+    """Revokes the token and returns the id of the user it belonged to."""
     refresh_token = _resolve_refresh_token(db, raw_refresh_token)
     refresh_token.revoked_at = datetime.now(UTC)
+    user_id = refresh_token.user_id
     db.commit()
+    return user_id
 
 
 def revoke_all_refresh_tokens(db: Session, user_id: int) -> None:

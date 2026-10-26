@@ -1,6 +1,7 @@
 import base64
 import json
 from collections.abc import Callable
+from datetime import datetime
 from typing import Any
 
 from fastapi import Request
@@ -102,7 +103,7 @@ def _cursor_paginate(
 
     raw_cursor = request.query_params.get("cursor")
     direction = request.query_params.get("direction") or "next"
-    cursor_values = _decode_cursor(raw_cursor) if raw_cursor else None
+    cursor_values = _decode_cursor(raw_cursor, order_columns) if raw_cursor else None
 
     going_backward = cursor_values is not None and direction == "prev"
     # "Greater than" continues forward through an ascending list, or rewinds backward through a
@@ -147,8 +148,16 @@ def _encode_cursor(row: Any, order_columns: list[Column]) -> str:
     return base64.urlsafe_b64encode(json.dumps(values).encode()).decode()
 
 
-def _decode_cursor(cursor: str) -> list[Any]:
-    return json.loads(base64.urlsafe_b64decode(cursor.encode()).decode())
+def _decode_cursor(cursor: str, order_columns: list[Column]) -> list[Any]:
+    values = json.loads(base64.urlsafe_b64decode(cursor.encode()).decode())
+    # _encode_cursor stores datetimes as ISO strings (JSON has no datetime type) — turn them back
+    # into datetimes, or Postgres rejects the keyset comparison as `timestamptz < varchar`.
+    return [
+        datetime.fromisoformat(value)
+        if isinstance(value, str) and column.type.python_type is datetime
+        else value
+        for column, value in zip(order_columns, values, strict=False)
+    ]
 
 
 def _jsonable(value: Any) -> Any:

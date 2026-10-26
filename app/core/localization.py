@@ -39,6 +39,13 @@ def translate(key: str, locale: str, **params: Any) -> str:
     return message.format(**params) if params else message
 
 
+def supported_locales() -> frozenset[str]:
+    """Every locale with a catalog under app/lang/ — e.g. for sending a push in all languages at
+    once when there's no request (and no per-user locale) to pick one from.
+    """
+    return _supported_locales()
+
+
 def request_locale(request: Request) -> str:
     """The locale LocaleMiddleware already resolved for this request."""
     return getattr(request.state, "locale", _DEFAULT_LOCALE)
