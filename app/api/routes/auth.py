@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_current_user, get_db, mark_notification_read
 from app.core.localization import request_locale, translate
 from app.models.user import User
 from app.schemas.auth import (
     ForgotPasswordRequest,
+    LogoutRequest,
     ResetPasswordRequest,
     Token,
     TokenRefresh,
@@ -13,14 +14,14 @@ from app.schemas.auth import (
     UserRegister,
 )
 from app.schemas.user import UpdateMeRequest, UserRead
-from app.services import auth_service, user_service
+from app.services import auth_service, device_service, user_service
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-def register(payload: UserRegister, db: Session = Depends(get_db)) -> UserRead:
-    return user_service.to_user_read(auth_service.register_user(db, payload))
+async def register(payload: UserRegister, db: Session = Depends(get_db)) -> UserRead:
+    return user_service.to_user_read(await auth_service.register_user(db, payload))
 
 
 @router.post("/login", response_model=Token)
@@ -34,17 +35,19 @@ def refresh(payload: TokenRefresh, db: Session = Depends(get_db)) -> Token:
 
 
 @router.post("/logout")
-def logout(payload: TokenRefresh, request: Request, db: Session = Depends(get_db)) -> dict[str, str]:
-    auth_service.revoke_refresh_token(db, payload.refresh_token)
+def logout(payload: LogoutRequest, request: Request, db: Session = Depends(get_db)) -> dict[str, str]:
+    user_id = auth_service.revoke_refresh_token(db, payload.refresh_token)
+    if payload.onesignal_player_id:
+        device_service.delete_device(db, user_id, payload.onesignal_player_id)
     return {"message": translate("auth.logged_out", locale=request_locale(request))}
 
 
-@router.get("/me", response_model=UserRead)
+@router.get("/me", response_model=UserRead, dependencies=[Depends(mark_notification_read)])
 def me(current_user: User = Depends(get_current_user)) -> UserRead:
     return user_service.to_user_read(current_user)
 
 
-@router.put("/me", response_model=UserRead)
+@router.put("/me", response_model=UserRead, dependencies=[Depends(mark_notification_read)])
 def update_me(
     payload: UpdateMeRequest,
     db: Session = Depends(get_db),

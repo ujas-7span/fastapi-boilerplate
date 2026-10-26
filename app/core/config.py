@@ -36,6 +36,13 @@ class Settings(BaseSettings):
 
     frontend_url: str = "http://localhost:3000"
 
+    notification_enabled: bool = False
+    onesignal_app_id: str = ""
+    onesignal_api_key: str = ""
+    onesignal_api_url: str = "https://api.onesignal.com/notifications"
+    # Notifications older than this are deleted by the nightly worker cron.
+    notification_retention_days: int = 90
+
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
     aws_region: str = "us-east-1"

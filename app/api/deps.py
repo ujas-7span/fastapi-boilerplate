@@ -11,6 +11,7 @@ from app.core.security import decode_access_token
 from app.db.base import QB, Queryable
 from app.db.session import SessionLocal
 from app.models.user import User
+from app.services import notification_service
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -93,3 +94,14 @@ def get_current_user(
         raise UnauthorizedException("auth.account_deactivated")
 
     return user
+
+
+def mark_notification_read(
+    notify_id: int | None = Query(
+        default=None, description="Marks this notification (of the current user) as read before handling the request"
+    ),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    if notify_id is not None:
+        notification_service.mark_one_read(db, current_user.id, notify_id)

@@ -34,4 +34,9 @@ MESSAGES: dict[str, str] = {
         "If the button doesn't work, copy and paste this link into your browser:"
     ),
     "email.password_reset.ignore": "If you didn't request this, you can safely ignore this email.",
+    "notification.read_success": "Notifications marked as read.",
+    "notification.unread_success": "Notifications marked as unread.",
+    "notification.welcome.title": "Welcome to {app_name}",
+    "notification.welcome.description": "Hi {name}, your account has been created successfully.",
+    "device.onesignal_saved": "Device registered successfully.",
 }
